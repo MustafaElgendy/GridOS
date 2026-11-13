@@ -3,30 +3,27 @@ import 'package:grid_os/Home_Page/desktop_size.dart';
 import 'package:grid_os/Home_Page/mobile_size.dart';
 import 'package:grid_os/Sign_Up_pages/first_sign_up.dart';
 import 'package:grid_os/Sign_Up_pages/login_page.dart';
+import 'package:grid_os/Sign_Up_pages/sign_up_models.dart';
+import 'package:grid_os/theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, this.submitSignup});
+
+  final SignUpSubmitter? submitSignup;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFFCFDFB),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF198754),
-          surface: const Color(0xFFFCFDFB),
-        ),
-        fontFamily: 'Arial',
-      ),
+      theme: AppTheme.light,
       home: const ResponsivePage(),
       routes: {
-        '/sign-up': (context) => const FirstSignUpPage(),
+        '/sign-up': (context) =>
+            FirstSignUpPage(submitSignup: submitSignup),
         '/login': (context) => const LoginPage(),
       },
     );

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:grid_os/Sign_Up_pages/almost_there_page.dart';
 import 'package:grid_os/Sign_Up_pages/auth_shared_widgets.dart';
+import 'package:grid_os/Sign_Up_pages/sign_up_models.dart';
+import 'package:grid_os/theme/app_theme.dart';
 
 class FirstSignUpPage extends StatefulWidget {
-  const FirstSignUpPage({super.key});
+  const FirstSignUpPage({super.key, this.submitSignup});
+
+  final SignUpSubmitter? submitSignup;
 
   @override
   State<FirstSignUpPage> createState() => _FirstSignUpPageState();
@@ -15,7 +20,16 @@ class _FirstSignUpPageState extends State<FirstSignUpPage> {
   static final _symbolPattern = RegExp(r'[^A-Za-z0-9]');
 
   final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   String? _validatePassword(String? value) {
     final password = value ?? '';
@@ -43,9 +57,17 @@ class _FirstSignUpPageState extends State<FirstSignUpPage> {
   }
 
   void _submit() {
-    if (_formKey.currentState?.validate() ?? false) {
-      _showApiPendingMessage();
-    }
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (context) => AlmostTherePage(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          submitSignup: widget.submitSignup,
+        ),
+      ),
+    );
   }
 
   @override
@@ -58,20 +80,12 @@ class _FirstSignUpPageState extends State<FirstSignUpPage> {
           children: [
             const Text(
               'Start free',
-              style: TextStyle(
-                color: AuthColors.ink,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
+              style: AppTextStyles.authHeading,
             ),
             const SizedBox(height: 4),
             const Text(
               'Run your whole workspace from one place. No card needed.',
-              style: TextStyle(
-                color: AuthColors.muted,
-                fontSize: 13,
-                height: 1.45,
-              ),
+              style: AppTextStyles.authDescription,
             ),
             const SizedBox(height: 16),
             AuthGoogleButton(
@@ -85,35 +99,36 @@ class _FirstSignUpPageState extends State<FirstSignUpPage> {
             const SizedBox(height: 5),
             TextFormField(
               key: const ValueKey('signup-email'),
+              controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               autofillHints: const [AutofillHints.email],
               autocorrect: false,
               validator: validateEmailAddress,
-              decoration: authInputDecoration(hintText: 'you@example.com'),
+              decoration: AppInputStyles.authentication(
+                hintText: 'you@example.com',
+              ),
             ),
             const SizedBox(height: 14),
             const AuthFieldLabel('Password'),
             const SizedBox(height: 5),
             TextFormField(
               key: const ValueKey('signup-password'),
+              controller: _passwordController,
               obscureText: !_isPasswordVisible,
               textInputAction: TextInputAction.done,
               autofillHints: const [AutofillHints.newPassword],
               autocorrect: false,
               validator: _validatePassword,
               onFieldSubmitted: (_) => _submit(),
-              decoration: authInputDecoration(
+              decoration: AppInputStyles.authentication(
                 suffixIcon: TextButton(
                   onPressed: () {
                     setState(() {
                       _isPasswordVisible = !_isPasswordVisible;
                     });
                   },
-                  style: TextButton.styleFrom(
-                    foregroundColor: AuthColors.green,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                  ),
+                  style: AppButtonStyles.authToggle,
                   child: Text(_isPasswordVisible ? 'Hide' : 'Show'),
                 ),
               ),
@@ -121,39 +136,19 @@ class _FirstSignUpPageState extends State<FirstSignUpPage> {
             const SizedBox(height: 5),
             const Text(
               'Use 8+ characters with uppercase, lowercase, a number, and a symbol.',
-              style: TextStyle(
-                color: AuthColors.muted,
-                fontSize: 11,
-                height: 1.4,
-              ),
+              style: AppTextStyles.authHelper,
             ),
             const SizedBox(height: 16),
             FilledButton(
               key: const ValueKey('create-account'),
               onPressed: _submit,
-              style: FilledButton.styleFrom(
-                backgroundColor: AuthColors.green,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(46),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                textStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
               child: const Text('Create account'),
             ),
             const SizedBox(height: 14),
             const Text(
               'Authentication is waiting for the backend API.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AuthColors.muted,
-                fontSize: 11,
-                height: 1.4,
-              ),
+              style: AppTextStyles.authHelper,
             ),
             const SizedBox(height: 12),
             Center(
@@ -162,23 +157,14 @@ class _FirstSignUpPageState extends State<FirstSignUpPage> {
                 children: [
                   const Text(
                     'Already have an account? ',
-                    style: TextStyle(color: AuthColors.muted, fontSize: 12),
+                    style: AppTextStyles.authSmallText,
                   ),
                   TextButton(
                     onPressed: () => Navigator.of(context).pushNamed('/login'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AuthColors.green,
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                    style: AppButtonStyles.authInline,
                     child: const Text(
                       'Log in',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        decoration: TextDecoration.underline,
-                      ),
+                      style: AppTextStyles.authLink,
                     ),
                   ),
                 ],

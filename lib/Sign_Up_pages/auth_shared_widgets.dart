@@ -1,13 +1,5 @@
 import 'package:flutter/material.dart';
-
-abstract final class AuthColors {
-  static const pageBackground = Color(0xFFF6F7F3);
-  static const cardBorder = Color(0xFFE6E9E4);
-  static const ink = Color(0xFF202722);
-  static const muted = Color(0xFF737B75);
-  static const green = Color(0xFF117562);
-  static const error = Color(0xFFB3261E);
-}
+import 'package:grid_os/theme/app_theme.dart';
 
 class AuthPageLayout extends StatelessWidget {
   const AuthPageLayout({super.key, required this.form});
@@ -17,7 +9,7 @@ class AuthPageLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AuthColors.pageBackground,
+      backgroundColor: AppColors.authBackground,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -62,16 +54,10 @@ class AuthCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: AuthColors.cardBorder),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x080D2017),
-            blurRadius: 18,
-            offset: Offset(0, 5),
-          ),
-        ],
+        color: AppColors.white,
+        border: Border.all(color: AppColors.authBorder),
+        borderRadius: BorderRadius.circular(AppRadii.authCard),
+        boxShadow: AppShadows.authCard,
       ),
       child: child,
     );
@@ -105,12 +91,7 @@ class AuthBrand extends StatelessWidget {
         const SizedBox(width: 8),
         const Text(
           'GridOS',
-          style: TextStyle(
-            color: AuthColors.ink,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.4,
-          ),
+          style: AppTextStyles.authBrand,
         ),
       ],
     );
@@ -124,8 +105,8 @@ class _BrandTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AuthColors.green,
-        borderRadius: BorderRadius.circular(1.5),
+        color: AppColors.authGreen,
+        borderRadius: BorderRadius.circular(AppRadii.brandTile),
       ),
     );
   }
@@ -140,12 +121,7 @@ class AuthGoogleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return OutlinedButton(
       onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AuthColors.ink,
-        side: const BorderSide(color: AuthColors.cardBorder),
-        minimumSize: const Size.fromHeight(44),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
+      style: AppButtonStyles.authGoogle,
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -156,7 +132,7 @@ class AuthGoogleButton extends StatelessWidget {
               'Continue with Google',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: AppTextStyles.googleButton,
             ),
           ),
         ],
@@ -176,15 +152,11 @@ class _GoogleMark extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFB8BDB9)),
+        border: Border.all(color: AppColors.googleBorder),
       ),
       child: const Text(
         'G',
-        style: TextStyle(
-          color: Color(0xFF6D746F),
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
+        style: AppTextStyles.googleMark,
       ),
     );
   }
@@ -197,15 +169,15 @@ class AuthEmailDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Row(
       children: [
-        Expanded(child: Divider(color: AuthColors.cardBorder, height: 1)),
+        Expanded(child: Divider(color: AppColors.authBorder, height: 1)),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 10),
           child: Text(
             'or with your email',
-            style: TextStyle(color: AuthColors.muted, fontSize: 11),
+            style: AppTextStyles.authDivider,
           ),
         ),
-        Expanded(child: Divider(color: AuthColors.cardBorder, height: 1)),
+        Expanded(child: Divider(color: AppColors.authBorder, height: 1)),
       ],
     );
   }
@@ -220,11 +192,7 @@ class AuthFieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: const TextStyle(
-        color: AuthColors.ink,
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-      ),
+      style: AppTextStyles.authFieldLabel,
     );
   }
 }
@@ -241,50 +209,16 @@ class AuthSupportPrompt extends StatelessWidget {
       children: [
         Icon(
           Icons.chat_bubble_outline_rounded,
-          color: AuthColors.green,
+          color: AppColors.authGreen,
           size: 14,
         ),
         Text(
           'Questions? Talk to us on WhatsApp',
-          style: TextStyle(
-            color: AuthColors.green,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTextStyles.authSupport,
         ),
       ],
     );
   }
-}
-
-InputDecoration authInputDecoration({String? hintText, Widget? suffixIcon}) {
-  return InputDecoration(
-    hintText: hintText,
-    hintStyle: const TextStyle(color: Color(0xFF9AA19B), fontSize: 13),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
-    isDense: true,
-    suffixIcon: suffixIcon,
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: AuthColors.cardBorder),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: AuthColors.cardBorder),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: AuthColors.green, width: 1.4),
-    ),
-    errorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: AuthColors.error),
-    ),
-    focusedErrorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: AuthColors.error, width: 1.4),
-    ),
-  );
 }
 
 String? validateEmailAddress(String? value) {

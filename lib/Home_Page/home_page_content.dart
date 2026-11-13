@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:grid_os/theme/app_theme.dart';
 
-const _ink = Color(0xFF17231C);
-const _muted = Color(0xFF68756D);
-const _green = Color(0xFF16834A);
-const _paleGreen = Color(0xFFEAF5ED);
-const _line = Color(0xFFE8ECE8);
+const _muted = AppColors.homeMuted;
+const _green = AppColors.homeGreen;
+const _paleGreen = AppColors.homePaleGreen;
+const _line = AppColors.homeLine;
 
 class GridOsHomePage extends StatefulWidget {
   const GridOsHomePage({super.key, required this.isMobile});
@@ -48,9 +48,7 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1200),
               child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 22 : 48,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: isMobile ? 22 : 48),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -84,12 +82,12 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
           const _Brand(),
           const Spacer(),
           if (!isMobile) ...[
-            _NavButton(
-              label: 'Plans',
-              onPressed: () => _scrollTo(_plansKey),
-            ),
+            _NavButton(label: 'Plans', onPressed: () => _scrollTo(_plansKey)),
             const SizedBox(width: 26),
-            _NavButton(label: 'About', onPressed: () => _scrollTo(_featuresKey)),
+            _NavButton(
+              label: 'About',
+              onPressed: () => _scrollTo(_featuresKey),
+            ),
             const SizedBox(width: 30),
             _PrimaryButton(
               label: 'Get started',
@@ -100,11 +98,7 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
             IconButton(
               tooltip: 'View plans',
               onPressed: () => _scrollTo(_plansKey),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: _ink,
-                side: const BorderSide(color: _line),
-              ),
+              style: AppButtonStyles.homeIcon,
               icon: const Icon(Icons.arrow_downward_rounded, size: 20),
             ),
         ],
@@ -120,7 +114,7 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: _paleGreen,
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(AppRadii.pill),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
@@ -130,11 +124,7 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
               Flexible(
                 child: Text(
                   'A smarter way to run your space',
-                  style: TextStyle(
-                    color: _green,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AppTextStyles.heroBadge,
                 ),
               ),
             ],
@@ -143,18 +133,12 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
         const SizedBox(height: 23),
         Text.rich(
           TextSpan(
-            style: TextStyle(
-              color: _ink,
-              fontSize: isMobile ? 43 : 58,
-              height: 1.04,
-              letterSpacing: isMobile ? -1.6 : -2.6,
-              fontWeight: FontWeight.w700,
-            ),
+            style: AppTextStyles.heroHeading(isMobile),
             children: const [
               TextSpan(text: 'Make room\nfor '),
               TextSpan(
                 text: 'better work.',
-                style: TextStyle(color: _green),
+                style: AppTextStyles.heroHighlight,
               ),
             ],
           ),
@@ -162,7 +146,7 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
         const SizedBox(height: 20),
         const Text(
           'The all-in-one workspace platform that helps you manage your people, places, and day-to-day operations — beautifully.',
-          style: TextStyle(color: _muted, fontSize: 16, height: 1.7),
+          style: AppTextStyles.heroBody,
         ),
         const SizedBox(height: 28),
         Wrap(
@@ -176,20 +160,10 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
             ),
             OutlinedButton(
               onPressed: () => _scrollTo(_featuresKey),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: _ink,
-                side: const BorderSide(color: _line),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 17,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(13),
-                ),
-              ),
+              style: AppButtonStyles.homeSecondary,
               child: const Text(
                 'See how it works',
-                style: TextStyle(fontWeight: FontWeight.w600),
+                style: AppTextStyles.navButton,
               ),
             ),
           ],
@@ -202,7 +176,7 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
             Flexible(
               child: Text(
                 'Easy to set up  ·  Made for modern teams',
-                style: TextStyle(color: _muted, fontSize: 12),
+                style: AppTextStyles.heroFootnote,
               ),
             ),
           ],
@@ -243,7 +217,7 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
         const Text(
           'A better workday starts with a better-run space',
           textAlign: TextAlign.center,
-          style: TextStyle(color: _muted, fontSize: 13),
+          style: AppTextStyles.trustCaption,
         ),
         const SizedBox(height: 24),
         Wrap(
@@ -255,17 +229,9 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(company.$2, size: 20, color: const Color(0xFF98A39B)),
+                  Icon(company.$2, size: 20, color: AppColors.partnerIcon),
                   const SizedBox(width: 7),
-                  Text(
-                    company.$1,
-                    style: const TextStyle(
-                      color: Color(0xFF89958C),
-                      fontSize: 12,
-                      letterSpacing: 1.1,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                  Text(company.$1, style: AppTextStyles.partnerName),
                 ],
               ),
           ],
@@ -298,8 +264,7 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
         const _SectionHeading(
           eyebrow: 'LESS ADMIN. MORE MOMENTUM.',
           title: 'Everything in its right place.',
-          subtitle:
-              'One calm, connected way to manage the moving parts of your workspace.',
+          subtitle: 'One calm, connected way to manage the moving parts of your workspace.',
         ),
         const SizedBox(height: 34),
         if (isMobile)
@@ -339,18 +304,14 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
       key: _plansKey,
       padding: EdgeInsets.all(isMobile ? 24 : 46),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F7F1),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFE1EEE3)),
+        color: AppColors.planBackground,
+        borderRadius: BorderRadius.circular(AppRadii.panel),
+        border: Border.all(color: AppColors.planBorder),
       ),
       child: isMobile
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _planCopy(),
-                const SizedBox(height: 28),
-                _planCard(),
-              ],
+              children: [_planCopy(), const SizedBox(height: 28), _planCard()],
             )
           : Row(
               children: [
@@ -366,30 +327,16 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'A SPACE THAT GROWS WITH YOU',
-          style: TextStyle(
-            color: _green,
-            fontSize: 11,
-            letterSpacing: 1.3,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
+        Text('A SPACE THAT GROWS WITH YOU', style: AppTextStyles.planEyebrow),
         SizedBox(height: 14),
         Text(
           'Your next great workday starts here.',
-          style: TextStyle(
-            color: _ink,
-            fontSize: 32,
-            height: 1.15,
-            letterSpacing: -1,
-            fontWeight: FontWeight.w700,
-          ),
+          style: AppTextStyles.planHeading,
         ),
         SizedBox(height: 12),
         Text(
           'Bring your workspace together with a plan that fits the way your team works.',
-          style: TextStyle(color: _muted, fontSize: 14, height: 1.65),
+          style: AppTextStyles.planDescription,
         ),
       ],
     );
@@ -399,16 +346,10 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE3EBE4)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0B18331F),
-            blurRadius: 24,
-            offset: Offset(0, 10),
-          ),
-        ],
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        border: Border.all(color: AppColors.planCardBorder),
+        boxShadow: AppShadows.planCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,11 +359,7 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
               Expanded(
                 child: Text(
                   'GridOS for your team',
-                  style: TextStyle(
-                    color: _ink,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AppTextStyles.planCardTitle,
                 ),
               ),
               Icon(Icons.stars_rounded, color: _green, size: 22),
@@ -447,7 +384,7 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
           const Center(
             child: Text(
               'Flexible plans for the way you work',
-              style: TextStyle(color: _muted, fontSize: 11),
+              style: AppTextStyles.planFootnote,
             ),
           ),
         ],
@@ -461,14 +398,8 @@ class _GridOsHomePageState extends State<GridOsHomePage> {
       children: [
         const _Brand(small: true),
         if (!isMobile)
-          const Text(
-            'Make room for better work.',
-            style: TextStyle(color: _muted, fontSize: 12),
-          ),
-        const Text(
-          '© GridOS',
-          style: TextStyle(color: _muted, fontSize: 12),
-        ),
+          const Text('Make room for better work.', style: AppTextStyles.footer),
+        const Text('© GridOS', style: AppTextStyles.footer),
       ],
     );
   }
@@ -490,20 +421,18 @@ class _Brand extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             color: _green,
-            borderRadius: BorderRadius.circular(small ? 8 : 10),
+            borderRadius: BorderRadius.circular(
+              small ? AppRadii.brandSmall : AppRadii.control,
+            ),
           ),
-          child: Icon(Icons.grid_view_rounded, color: Colors.white, size: size * .6),
+          child: Icon(
+            Icons.grid_view_rounded,
+            color: AppColors.white,
+            size: size * .6,
+          ),
         ),
         SizedBox(width: small ? 8 : 10),
-        Text(
-          'GridOS',
-          style: TextStyle(
-            color: _ink,
-            fontSize: small ? 16 : 21,
-            letterSpacing: -.7,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
+        Text('GridOS', style: AppTextStyles.brand(small: small)),
       ],
     );
   }
@@ -519,8 +448,8 @@ class _NavButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextButton(
       onPressed: onPressed,
-      style: TextButton.styleFrom(foregroundColor: _muted),
-      child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      style: AppButtonStyles.homeNavigation,
+      child: Text(label, style: AppTextStyles.navButton),
     );
   }
 }
@@ -542,29 +471,14 @@ class _PrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return FilledButton(
       onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: _green,
-        foregroundColor: Colors.white,
-        padding: EdgeInsets.symmetric(
-          horizontal: compact ? 18 : 20,
-          vertical: compact ? 13 : 17,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
-        textStyle: TextStyle(
-          fontSize: compact ? 13 : 14,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
+      style: AppButtonStyles.homePrimary(compact: compact),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Flexible(
             child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
-          if (icon != null) ...[
-            const SizedBox(width: 9),
-            Icon(icon, size: 17),
-          ],
+          if (icon != null) ...[const SizedBox(width: 9), Icon(icon, size: 17)],
         ],
       ),
     );
@@ -589,30 +503,19 @@ class _SectionHeading extends StatelessWidget {
         Text(
           eyebrow,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: _green,
-            fontSize: 11,
-            letterSpacing: 1.4,
-            fontWeight: FontWeight.w800,
-          ),
+          style: AppTextStyles.sectionEyebrow,
         ),
         const SizedBox(height: 13),
         Text(
           title,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: _ink,
-            fontSize: 32,
-            height: 1.2,
-            letterSpacing: -.9,
-            fontWeight: FontWeight.w700,
-          ),
+          style: AppTextStyles.sectionTitle,
         ),
         const SizedBox(height: 10),
         Text(
           subtitle,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: _muted, fontSize: 14, height: 1.6),
+          style: AppTextStyles.sectionSubtitle,
         ),
       ],
     );
@@ -635,9 +538,9 @@ class _FeatureCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         border: Border.all(color: _line),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadii.featureCard),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -647,24 +550,14 @@ class _FeatureCard extends StatelessWidget {
             height: 42,
             decoration: BoxDecoration(
               color: _paleGreen,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadii.icon),
             ),
             child: Icon(icon, color: _green, size: 21),
           ),
           const SizedBox(height: 19),
-          Text(
-            title,
-            style: const TextStyle(
-              color: _ink,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text(title, style: AppTextStyles.featureTitle),
           const SizedBox(height: 8),
-          Text(
-            description,
-            style: const TextStyle(color: _muted, fontSize: 13, height: 1.6),
-          ),
+          Text(description, style: AppTextStyles.featureDescription),
         ],
       ),
     );
@@ -682,12 +575,7 @@ class _PlanPerk extends StatelessWidget {
       children: [
         const Icon(Icons.check_circle_rounded, color: _green, size: 18),
         const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(color: _muted, fontSize: 13),
-          ),
-        ),
+        Expanded(child: Text(label, style: AppTextStyles.perk)),
       ],
     );
   }
@@ -704,22 +592,16 @@ class _WorkspacePreview extends StatelessWidget {
       height: 420,
       padding: EdgeInsets.all(isMobile ? 14 : 18),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F5F0),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFE7EDE7)),
+        color: AppColors.previewBackground,
+        borderRadius: BorderRadius.circular(AppRadii.panel),
+        border: Border.all(color: AppColors.previewBorder),
       ),
       child: Container(
         padding: EdgeInsets.all(isMobile ? 14 : 18),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(19),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x1018331F),
-              blurRadius: 24,
-              offset: Offset(0, 9),
-            ),
-          ],
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadii.previewCard),
+          boxShadow: AppShadows.previewCard,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -729,11 +611,7 @@ class _WorkspacePreview extends StatelessWidget {
                 const Expanded(
                   child: Text(
                     'Workspace overview',
-                    style: TextStyle(
-                      color: _ink,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: AppTextStyles.workspaceTitle,
                   ),
                 ),
                 Container(
@@ -743,23 +621,16 @@ class _WorkspacePreview extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: _paleGreen,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadii.card),
                   ),
-                  child: const Text(
-                    '●  Live',
-                    style: TextStyle(
-                      color: _green,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  child: const Text('●  Live', style: AppTextStyles.liveLabel),
                 ),
               ],
             ),
             const SizedBox(height: 4),
             const Text(
               'Tuesday, October 24',
-              style: TextStyle(color: _muted, fontSize: 10),
+              style: AppTextStyles.workspaceDate,
             ),
             const SizedBox(height: 18),
             Row(
@@ -786,22 +657,16 @@ class _WorkspacePreview extends StatelessWidget {
             const SizedBox(height: 16),
             const Text(
               'Today at a glance',
-              style: TextStyle(
-                color: _ink,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
+              style: AppTextStyles.workspaceSectionTitle,
             ),
             const SizedBox(height: 10),
-            const Expanded(
-              child: _RoomSchedule(),
-            ),
+            const Expanded(child: _RoomSchedule()),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF6F8F6),
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.insightBackground,
+                borderRadius: BorderRadius.circular(AppRadii.icon),
               ),
               child: const Row(
                 children: [
@@ -810,11 +675,7 @@ class _WorkspacePreview extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Your space is 82% utilized this week',
-                      style: TextStyle(
-                        color: _muted,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTextStyles.workspaceInsight,
                     ),
                   ),
                   Icon(Icons.arrow_forward_rounded, color: _muted, size: 14),
@@ -846,9 +707,9 @@ class _MetricTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(11),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAF8),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF0F2F0)),
+        color: AppColors.metricBackground,
+        borderRadius: BorderRadius.circular(AppRadii.icon),
+        border: Border.all(color: AppColors.metricBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -862,7 +723,7 @@ class _MetricTile extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: _muted, fontSize: 10),
+                  style: AppTextStyles.metricLabel,
                 ),
               ),
             ],
@@ -871,15 +732,7 @@ class _MetricTile extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  color: _ink,
-                  fontSize: 22,
-                  height: 1,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              Text(value, style: AppTextStyles.metricValue),
               const SizedBox(width: 6),
               Flexible(
                 child: Padding(
@@ -888,10 +741,8 @@ class _MetricTile extends StatelessWidget {
                     change,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTextStyles.metricChange.copyWith(
                       color: change.startsWith('+') ? _green : _muted,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -920,27 +771,25 @@ class _RoomSchedule extends StatelessWidget {
         for (var index = 0; index < _events.length; index++)
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(bottom: index == _events.length - 1 ? 0 : 7),
+              padding: EdgeInsets.only(
+                bottom: index == _events.length - 1 ? 0 : 7,
+              ),
               child: Row(
                 children: [
                   SizedBox(
                     width: 42,
                     child: Text(
                       _events[index].$1,
-                      style: const TextStyle(
-                        color: _muted,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTextStyles.roomTime,
                     ),
                   ),
                   Container(
                     width: 3,
                     decoration: BoxDecoration(
                       color: index == 1
-                          ? const Color(0xFFF0BD6B)
-                          : const Color(0xFF78B68B),
-                      borderRadius: BorderRadius.circular(3),
+                          ? AppColors.scheduleHighlight
+                          : AppColors.scheduleBar,
+                      borderRadius: BorderRadius.circular(AppRadii.scheduleBar),
                     ),
                   ),
                   const SizedBox(width: 9),
@@ -953,16 +802,12 @@ class _RoomSchedule extends StatelessWidget {
                           _events[index].$2,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _ink,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: AppTextStyles.roomTitle,
                         ),
                         const SizedBox(height: 3),
                         Text(
                           _events[index].$3,
-                          style: const TextStyle(color: _muted, fontSize: 9),
+                          style: AppTextStyles.roomDescription,
                         ),
                       ],
                     ),
@@ -970,15 +815,11 @@ class _RoomSchedule extends StatelessWidget {
                   CircleAvatar(
                     radius: 11,
                     backgroundColor: index == 1
-                        ? const Color(0xFFFCEEDB)
+                        ? AppColors.scheduleAvatar
                         : _paleGreen,
                     child: Text(
                       _events[index].$4,
-                      style: const TextStyle(
-                        color: _green,
-                        fontSize: 7,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: AppTextStyles.roomAvatar,
                     ),
                   ),
                 ],

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:grid_os/Sign_Up_pages/auth_shared_widgets.dart';
+import 'package:grid_os/theme/app_theme.dart';
 
 enum LoginAuthenticationResult {
   authenticated,
@@ -150,20 +151,12 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             const Text(
               'Welcome back',
-              style: TextStyle(
-                color: AuthColors.ink,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
+              style: AppTextStyles.authHeading,
             ),
             const SizedBox(height: 4),
             const Text(
               'Log in with the email you signed up with.',
-              style: TextStyle(
-                color: AuthColors.muted,
-                fontSize: 13,
-                height: 1.45,
-              ),
+              style: AppTextStyles.authDescription,
             ),
             const SizedBox(height: 16),
             AuthGoogleButton(
@@ -184,7 +177,9 @@ class _LoginPageState extends State<LoginPage> {
               autofillHints: const [AutofillHints.email],
               autocorrect: false,
               validator: validateEmailAddress,
-              decoration: authInputDecoration(hintText: 'you@example.com'),
+              decoration: AppInputStyles.authentication(
+                hintText: 'you@example.com',
+              ),
             ),
             const SizedBox(height: 14),
             const AuthFieldLabel('Password'),
@@ -198,17 +193,14 @@ class _LoginPageState extends State<LoginPage> {
               autocorrect: false,
               validator: _validatePassword,
               onFieldSubmitted: (_) => _submit(),
-              decoration: authInputDecoration(
+              decoration: AppInputStyles.authentication(
                 suffixIcon: TextButton(
                   onPressed: () {
                     setState(() {
                       _isPasswordVisible = !_isPasswordVisible;
                     });
                   },
-                  style: TextButton.styleFrom(
-                    foregroundColor: AuthColors.green,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                  ),
+                  style: AppButtonStyles.authToggle,
                   child: Text(_isPasswordVisible ? 'Hide' : 'Show'),
                 ),
               ),
@@ -218,14 +210,12 @@ class _LoginPageState extends State<LoginPage> {
               Text(
                 _feedbackMessage!,
                 key: const ValueKey('login-feedback'),
-                style: TextStyle(
+                style: AppTextStyles.authHelper.copyWith(
                   color: switch (_feedbackType) {
-                    _FeedbackType.error => AuthColors.error,
-                    _FeedbackType.information => AuthColors.muted,
-                    _FeedbackType.success => AuthColors.green,
+                    _FeedbackType.error => AppColors.error,
+                    _FeedbackType.information => AppColors.authMuted,
+                    _FeedbackType.success => AppColors.authGreen,
                   },
-                  fontSize: 11,
-                  height: 1.4,
                 ),
               ),
             ],
@@ -235,19 +225,10 @@ class _LoginPageState extends State<LoginPage> {
               child: TextButton(
                 onPressed: () =>
                     _showApiPending('Password reset is waiting for the API.'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AuthColors.green,
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
+                style: AppButtonStyles.authInline,
                 child: const Text(
                   'Forgot password?',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    decoration: TextDecoration.underline,
-                  ),
+                  style: AppTextStyles.authLink,
                 ),
               ),
             ),
@@ -255,27 +236,14 @@ class _LoginPageState extends State<LoginPage> {
             FilledButton(
               key: const ValueKey('login-submit'),
               onPressed: _isLockedOut || _isSubmitting ? null : _submit,
-              style: FilledButton.styleFrom(
-                backgroundColor: AuthColors.green,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: AuthColors.green.withValues(alpha: .5),
-                disabledForegroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(46),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                textStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              style: AppButtonStyles.authPrimaryDisabled,
               child: _isSubmitting
                   ? const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: AppColors.white,
                       ),
                     )
                   : Text(
@@ -288,11 +256,7 @@ class _LoginPageState extends State<LoginPage> {
             const Text(
               'Authentication is waiting for the backend API.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AuthColors.muted,
-                fontSize: 11,
-                height: 1.4,
-              ),
+              style: AppTextStyles.authHelper,
             ),
             const SizedBox(height: 12),
             Center(
@@ -301,24 +265,15 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   const Text(
                     'New to GridOS? ',
-                    style: TextStyle(color: AuthColors.muted, fontSize: 12),
+                    style: AppTextStyles.authSmallText,
                   ),
                   TextButton(
                     onPressed: () =>
                         Navigator.of(context).pushNamed('/sign-up'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AuthColors.green,
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                    style: AppButtonStyles.authInline,
                     child: const Text(
                       'Start free',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        decoration: TextDecoration.underline,
-                      ),
+                      style: AppTextStyles.authLink,
                     ),
                   ),
                 ],

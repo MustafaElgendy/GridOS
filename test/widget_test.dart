@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grid_os/Sign_Up_pages/first_sign_up.dart';
 import 'package:grid_os/Sign_Up_pages/login_page.dart';
+import 'package:grid_os/Sign_Up_pages/sign_up_models.dart';
 import 'package:grid_os/main.dart';
 
 void main() {
@@ -69,8 +70,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('sign-up password visibility toggles and valid submission waits '
-      'for the API', (tester) async {
+  testWidgets('valid sign-up details continue to the workspace setup page', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1440, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -96,10 +98,96 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('create-account')));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Authentication will be available when the API is connected.'),
-      findsOneWidget,
+    expect(find.text('Almost there'), findsOneWidget);
+    expect(find.byKey(const ValueKey('signup-full-name')), findsOneWidget);
+    expect(find.byKey(const ValueKey('signup-workspace-name')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('workspace setup validates details and waits for the API', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: FirstSignUpPage()));
+    await tester.enterText(
+      find.byKey(const ValueKey('signup-email')),
+      'team@example.com',
     );
+    await tester.enterText(
+      find.byKey(const ValueKey('signup-password')),
+      'StrongPass1!',
+    );
+    await tester.tap(find.byKey(const ValueKey('create-account')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('start-setup')));
+    await tester.pumpAndSettle();
+    expect(find.text('This field is required.'), findsNWidgets(2));
+
+    await tester.enterText(
+      find.byKey(const ValueKey('signup-full-name')),
+      'Karim Hassan',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('signup-workspace-name')),
+      'Ramla Workspace',
+    );
+    await tester.tap(find.byKey(const ValueKey('start-setup')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Account setup is waiting for the API.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('workspace setup sends all fields through the API callback', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1440, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    SignUpRequest? submittedRequest;
+    await tester.pumpWidget(
+      MyApp(
+        submitSignup: (request) async {
+          submittedRequest = request;
+          return SignUpSubmissionResult.created;
+        },
+      ),
+    );
+    await tester.tap(find.text('Get started'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('signup-email')),
+      'team@example.com',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('signup-password')),
+      'StrongPass1!',
+    );
+    await tester.tap(find.byKey(const ValueKey('create-account')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('signup-full-name')),
+      'Karim Hassan',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('signup-workspace-name')),
+      'Ramla Workspace',
+    );
+    await tester.tap(find.byKey(const ValueKey('start-setup')));
+    await tester.pumpAndSettle();
+
+    expect(submittedRequest?.email, 'team@example.com');
+    expect(submittedRequest?.password, 'StrongPass1!');
+    expect(submittedRequest?.fullName, 'Karim Hassan');
+    expect(submittedRequest?.workspaceName, 'Ramla Workspace');
+    expect(find.text('Your account is ready.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
