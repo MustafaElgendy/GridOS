@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:grid_os/Sign_Up_pages/almost_there_page.dart';
+import 'package:grid_os/Sign_Up_pages/Starup_Pages/startup_setup_models.dart';
+import 'package:grid_os/Sign_Up_pages/Starup_Pages/workspace_page.dart';
 import 'package:grid_os/Sign_Up_pages/auth_shared_widgets.dart';
 import 'package:grid_os/Sign_Up_pages/sign_up_models.dart';
 import 'package:grid_os/theme/app_theme.dart';
@@ -61,7 +62,8 @@ class _FirstSignUpPageState extends State<FirstSignUpPage> {
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (context) => AlmostTherePage(
+        builder: (context) => WorkspacePage(
+          setup: StartupSetup(ownerName: '', workspaceName: ''),
           email: _emailController.text.trim(),
           password: _passwordController.text,
           submitSignup: widget.submitSignup,
@@ -78,10 +80,7 @@ class _FirstSignUpPageState extends State<FirstSignUpPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Start free',
-              style: AppTextStyles.authHeading,
-            ),
+            const Text('Start free', style: AppTextStyles.authHeading),
             const SizedBox(height: 4),
             const Text(
               'Run your whole workspace from one place. No card needed.',
@@ -162,10 +161,7 @@ class _FirstSignUpPageState extends State<FirstSignUpPage> {
                   TextButton(
                     onPressed: () => Navigator.of(context).pushNamed('/login'),
                     style: AppButtonStyles.authInline,
-                    child: const Text(
-                      'Log in',
-                      style: AppTextStyles.authLink,
-                    ),
+                    child: const Text('Log in', style: AppTextStyles.authLink),
                   ),
                 ],
               ),
