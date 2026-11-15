@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:grid_os/Sign_Up_pages/Starup_Pages/preview_page.dart';
-import 'package:grid_os/Sign_Up_pages/Starup_Pages/spaces_page.dart';
-import 'package:grid_os/Sign_Up_pages/Starup_Pages/startup_setup_models.dart';
-import 'package:grid_os/Sign_Up_pages/Starup_Pages/startup_setup_widgets.dart';
+import 'package:grid_os/Sign_Up_pages/Startup_Pages/preview_page.dart';
+import 'package:grid_os/Sign_Up_pages/Startup_Pages/spaces_page.dart';
+import 'package:grid_os/Sign_Up_pages/Startup_Pages/startup_setup_models.dart';
+import 'package:grid_os/Sign_Up_pages/Startup_Pages/startup_setup_widgets.dart';
 import 'package:grid_os/Sign_Up_pages/sign_up_models.dart';
 import 'package:grid_os/theme/app_theme.dart';
 
