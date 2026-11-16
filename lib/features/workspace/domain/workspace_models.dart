@@ -77,9 +77,13 @@ class Booking {
     this.spaceType,
     this.spaceName,
     this.notes,
+    this.amount = 0,
+    this.paidAmount = 0,
     this.weekdays = const {},
     this.until,
-  });
+  }) : assert(amount >= 0),
+       assert(paidAmount >= 0),
+       assert(paidAmount <= amount);
 
   final String id;
   final String customerId;
@@ -90,6 +94,8 @@ class Booking {
   final SetupSpaceType? spaceType;
   final String? spaceName;
   final String? notes;
+  final double amount;
+  final double paidAmount;
   final Set<int> weekdays;
   final DateTime? until;
 }

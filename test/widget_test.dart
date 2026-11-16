@@ -11,6 +11,7 @@ import 'package:grid_os/Sign_Up_pages/Startup_Pages/workspace_page.dart';
 import 'package:grid_os/Sign_Up_pages/first_sign_up.dart';
 import 'package:grid_os/Sign_Up_pages/login_page.dart';
 import 'package:grid_os/Sign_Up_pages/sign_up_models.dart';
+import 'package:grid_os/features/workspace/workspace_data.dart';
 import 'package:grid_os/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -580,7 +581,7 @@ void main() {
     await tester.ensureVisible(find.text('Go to dashboard'));
     await tester.tap(find.text('Go to dashboard'));
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('dashboard-greeting')), findsOneWidget);
+    expect(find.byKey(const ValueKey('dashboard-overview')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -613,6 +614,191 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'dashboard compares local metrics and lists actionable insights',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+
+      final now = DateTime.now();
+      final priorYear = now.year - 1;
+      final priorMonthLastDay = DateTime(priorYear, now.month + 1, 0).day;
+      final priorDay = now.day > priorMonthLastDay
+          ? priorMonthLastDay
+          : now.day;
+      final currentDate = DateTime(now.year, now.month, now.day, 10);
+      final previousDate = DateTime(priorYear, now.month, priorDay, 10);
+      final repository = WorkspaceRepository();
+      repository.createMoneyEntry(
+        MoneyEntry(
+          id: 'current-income',
+          kind: MoneyEntryKind.income,
+          amount: 100,
+          occurredAt: currentDate,
+          currency: 'EGP',
+        ),
+      );
+      repository.createMoneyEntry(
+        MoneyEntry(
+          id: 'previous-income',
+          kind: MoneyEntryKind.income,
+          amount: 80,
+          occurredAt: previousDate,
+          currency: 'EGP',
+        ),
+      );
+      repository.createProduct(
+        const Product(
+          id: 'low-stock',
+          name: 'Coffee',
+          quantityOnHand: 1,
+          lowStockThreshold: 5,
+        ),
+      );
+      repository.createVisit(
+        Visit(
+          id: 'current-visit',
+          checkedInAt: currentDate,
+          checkedOutAt: currentDate.add(const Duration(hours: 1)),
+          spaceType: SetupSpaceType.sharedArea,
+          amount: 100,
+          isPaid: true,
+        ),
+      );
+      repository.createVisit(
+        Visit(
+          id: 'previous-visit',
+          checkedInAt: previousDate,
+          checkedOutAt: previousDate.add(const Duration(hours: 1)),
+          spaceType: SetupSpaceType.sharedArea,
+          amount: 80,
+          isPaid: true,
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: DashboardPage(
+            setup: StartupSetup(ownerName: 'Karim', workspaceName: 'GridOS'),
+            repository: repository,
+          ),
+        ),
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('dashboard-comparison-filter')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Same time last year'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('metric-money-in')),
+          matching: find.text('100 EGP'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('metric-money-in')),
+          matching: find.textContaining('25% more than same time last year'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Coffee needs stock'), findsOneWidget);
+      expect(find.text('Shared area made the most money'), findsOneWidget);
+      expect(find.text('Shared area grew the most'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('dashboard-comparison-chart')),
+        findsOneWidget,
+      );
+
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('dashboard-see-numbers')),
+      );
+      await tester.tap(find.byKey(const ValueKey('dashboard-see-numbers')));
+      await tester.pumpAndSettle();
+      expect(find.text('Dashboard numbers'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('dashboard range picker supports presets and month ranges', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1440, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: DashboardPage(
+          setup: StartupSetup(ownerName: 'Karim', workspaceName: 'GridOS'),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('topbar-today')), findsOneWidget);
+    expect(find.text('Dashboard'), findsNWidgets(2));
+    await tester.tap(find.byKey(const ValueKey('dashboard-period-filter')));
+    await tester.pumpAndSettle();
+    expect(find.text('Last 7 days'), findsOneWidget);
+    expect(find.text('Pick months'), findsOneWidget);
+    expect(find.text('Or your own dates'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const ValueKey('dashboard-preset-Last 7 days')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Last 7 days'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('dashboard-period-filter')));
+    await tester.pumpAndSettle();
+    final now = DateTime.now();
+    final previousMonth = now.month == 1 ? 12 : now.month - 1;
+    final year = now.month == 1 ? now.year - 1 : now.year;
+    await tester.tap(
+      find.byKey(ValueKey('dashboard-month-$year-$previousMonth')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('dashboard-range-show')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Custom dates'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('dashboard-comparison-filter')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Previous period'));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('dashboard-comparison-filter')),
+        matching: find.textContaining('Previous period'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('dashboard-comparison-custom-date')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Pick months'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('dashboard-preset-Today')));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('dashboard-comparison-filter')),
+        matching: find.textContaining('Custom dates'),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'dashboard Spaces and Prices reuse setup editors and update overview',
@@ -971,9 +1157,22 @@ void main() {
       find.byKey(const ValueKey('workspace-booking-customer')),
       'Rania',
     );
+    await tester.enterText(
+      find.byKey(const ValueKey('workspace-booking-amount')),
+      '800',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('workspace-booking-paid-amount')),
+      '300',
+    );
     await tester.tap(find.text('Save booking'));
     await tester.pumpAndSettle();
     expect(find.text('Rania'), findsOneWidget);
+    expect(find.text('Shared areas'), findsOneWidget);
+    expect(find.text('Shared area'), findsOneWidget);
+    expect(find.text('In use now'), findsOneWidget);
+    expect(find.text('Paid 300 EGP'), findsOneWidget);
+    expect(find.text('Owes 500 EGP'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('nav-money')));
     await tester.pumpAndSettle();
@@ -991,6 +1190,89 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Desk rental'), findsOneWidget);
     expect(find.text('50 EGP'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('bookings can be filtered by date presets', (tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+
+    final today = DateTime.now();
+    final todayStart = DateTime(today.year, today.month, today.day, 10);
+    final tomorrowStart = todayStart.add(const Duration(days: 1));
+    final setup = StartupSetup(ownerName: 'Karim', workspaceName: 'GridOS');
+    final repository = WorkspaceRepository();
+    repository.createCustomer(
+      Customer(id: 'today-customer', name: 'Today customer'),
+    );
+    repository.createCustomer(
+      Customer(id: 'tomorrow-customer', name: 'Tomorrow customer'),
+    );
+    repository.createBooking(
+      Booking(
+        id: 'today-booking',
+        customerId: 'today-customer',
+        kind: BookingKind.oneTime,
+        startsAt: todayStart,
+        endsAt: todayStart.add(const Duration(hours: 1)),
+        spaceType: SetupSpaceType.sharedArea,
+        spaceName: 'Shared area',
+      ),
+    );
+    repository.createBooking(
+      Booking(
+        id: 'tomorrow-booking',
+        customerId: 'tomorrow-customer',
+        kind: BookingKind.oneTime,
+        startsAt: tomorrowStart,
+        endsAt: tomorrowStart.add(const Duration(hours: 1)),
+        spaceType: SetupSpaceType.sharedArea,
+        spaceName: 'Shared area',
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: DashboardPage(setup: setup, repository: repository),
+      ),
+    );
+    await tester.tap(find.byKey(const ValueKey('nav-bookings')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Today customer'), findsOneWidget);
+    expect(find.text('Tomorrow customer'), findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey('workspace-booking-date-filter')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('workspace-booking-date-from')),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('workspace-booking-date-preset-Tomorrow')),
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('workspace-booking-date-apply')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Today customer'), findsNothing);
+    expect(find.text('Tomorrow customer'), findsOneWidget);
+
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('workspace-booking-date-filter')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('workspace-booking-date-apply')),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -1152,7 +1434,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(home: page));
       await tester.pumpAndSettle();
       final titleFinder = title == null
-          ? find.byKey(const ValueKey('dashboard-greeting'))
+          ? find.byKey(const ValueKey('dashboard-overview'))
           : find.text(title);
       if (title == null) expect(titleFinder, findsOneWidget);
       final pageScroll = title == 'Your workspace'

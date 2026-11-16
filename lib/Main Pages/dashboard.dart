@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:grid_os/Sign_Up_pages/Startup_Pages/prices_page.dart';
 import 'package:grid_os/Sign_Up_pages/Startup_Pages/spaces_page.dart';
-import 'package:grid_os/Sign_Up_pages/Startup_Pages/spaces_page_widgets.dart'
-    show spaceSummary;
 import 'package:grid_os/Sign_Up_pages/Startup_Pages/startup_setup_models.dart';
 import 'package:grid_os/Sign_Up_pages/Startup_Pages/startup_setup_widgets.dart';
 import 'package:grid_os/features/workspace/workspace_data.dart';
@@ -15,11 +13,13 @@ import 'package:grid_os/features/workspace/presentation/workspace_products_page.
 import 'package:grid_os/features/workspace/presentation/workspace_settings_page.dart';
 import 'package:grid_os/features/workspace/presentation/workspace_tasks_page.dart';
 import 'package:grid_os/features/workspace/presentation/workspace_today_operations.dart';
+import 'package:grid_os/features/workspace/presentation/workspace_dashboard_overview.dart';
 import 'package:grid_os/theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dashboard_widgets.dart';
 import 'staff_page.dart';
+
 import 'package:grid_os/features/workspace/presentation/workspace_page_utils.dart';
 
 String frontDeskPreferenceKey(StartupSetup setup) {
@@ -46,14 +46,13 @@ enum _DashboardSection {
 
 enum _OwnerMenuAction { addStaff, openFrontDesk, settings }
 
-enum _ChartMetric { money, visits }
-
 enum _SpacesTab { spaces, prices }
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key, required this.setup});
+  const DashboardPage({super.key, required this.setup, this.repository});
 
   final StartupSetup setup;
+  final WorkspaceRepository? repository;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -62,22 +61,17 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _workingStaffPins = <String>{};
-  final _expandedSpaceDetails = <String>{};
   late final WorkspaceRepository _workspaceRepository;
 
   _DashboardSection _section = _DashboardSection.dashboard;
   _SpacesTab _spacesTab = _SpacesTab.spaces;
-  _ChartMetric _chartMetric = _ChartMetric.money;
-  String _period = 'This month';
-  String _comparison = 'Nothing';
   bool _ownerOnShift = false;
   bool _openingFrontDesk = false;
-  bool _showWorkspaceTip = true;
 
   @override
   void initState() {
     super.initState();
-    _workspaceRepository = WorkspaceRepository();
+    _workspaceRepository = widget.repository ?? WorkspaceRepository();
     _seedProductsFromSetup();
   }
 
@@ -94,9 +88,11 @@ class _DashboardPageState extends State<DashboardPage> {
           item.costsYou.trim().isEmpty) {
         continue;
       }
+      final id = 'setup_kitchen_$index';
+      if (_workspaceRepository.productById(id) != null) continue;
       _workspaceRepository.createProduct(
         Product(
-          id: 'setup_kitchen_$index',
+          id: id,
           name: name.isEmpty ? 'Product ${index + 1}' : name,
           category: 'Kitchen',
           price: price,
@@ -124,23 +120,6 @@ class _DashboardPageState extends State<DashboardPage> {
   String get _ownerName =>
       _setup.ownerName.trim().isEmpty ? 'Owner' : _setup.ownerName.trim();
   String get _currency => _setup.country.currency;
-  DateTime? get _dashboardFromDate {
-    final now = DateTime.now();
-    return switch (_period) {
-      'Today' => DateTime(now.year, now.month, now.day),
-      'This week' => DateTime(now.year, now.month, now.day - now.weekday + 1),
-      'This year' => DateTime(now.year),
-      _ => DateTime(now.year, now.month),
-    };
-  }
-
-  String get _greeting {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  }
-
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -153,12 +132,12 @@ class _DashboardPageState extends State<DashboardPage> {
               ? null
               : Drawer(
                   width: 250,
-                  child: SafeArea(child: _navigationSidebar()),
+                  child: SafeArea(child: _navigationSidebar(desktop: false)),
                 ),
           body: SafeArea(
             child: Row(
               children: [
-                if (desktop) _navigationSidebar(),
+                if (desktop) _navigationSidebar(desktop: true),
                 Expanded(
                   child: Column(
                     children: [
@@ -190,9 +169,9 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _navigationSidebar() {
+  Widget _navigationSidebar({required bool desktop}) {
     return Container(
-      width: 218,
+      width: 174,
       decoration: const BoxDecoration(
         color: AppColors.white,
         border: Border(right: BorderSide(color: AppColors.authBorder)),
@@ -211,14 +190,33 @@ class _DashboardPageState extends State<DashboardPage> {
                     color: AppColors.authGreen,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
-                    Icons.grid_view_rounded,
-                    color: AppColors.white,
-                    size: 16,
+                  child: Text(
+                    _setup.workspaceName.trim().isEmpty
+                        ? 'G'
+                        : _setup.workspaceName.trim()[0].toUpperCase(),
+                    style: const TextStyle(
+                      color: AppColors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 9),
-                const Text('GridOS', style: AppTextStyles.authBrand),
+                Expanded(
+                  child: Text(
+                    _setup.workspaceName.trim().isEmpty
+                        ? 'GridOS'
+                        : _setup.workspaceName.trim(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.authBrand,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Notifications',
+                  onPressed: null,
+                  icon: const Icon(Icons.notifications_none_outlined, size: 17),
+                ),
               ],
             ),
           ),
@@ -273,11 +271,56 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           const Divider(height: 1, color: AppColors.authBorder),
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
             child: _navigationItem(
               _DashboardSection.settings,
               'Settings',
               Icons.settings_outlined,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 8, 10),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 13,
+                  backgroundColor: AppColors.homePaleGreen,
+                  child: Text(
+                    _ownerName[0].toUpperCase(),
+                    style: const TextStyle(
+                      color: AppColors.authGreen,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _ownerName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.authInk,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Text('Owner', style: AppTextStyles.authHelper),
+                    ],
+                  ),
+                ),
+                PopupMenuButton<_OwnerMenuAction>(
+                  key: const ValueKey('sidebar-owner-menu'),
+                  tooltip: 'Owner menu',
+                  onSelected: _handleOwnerMenuAction,
+                  itemBuilder: _ownerMenuItems,
+                  icon: const Icon(Icons.more_vert, size: 17),
+                ),
+              ],
             ),
           ),
         ],
@@ -363,7 +406,12 @@ class _DashboardPageState extends State<DashboardPage> {
               icon: const Icon(Icons.menu, size: 20),
             ),
             const SizedBox(width: 4),
-            const Text('GridOS', style: AppTextStyles.authBrand),
+            Text(
+              _setup.workspaceName.trim().isEmpty
+                  ? 'GridOS'
+                  : _setup.workspaceName.trim(),
+              style: AppTextStyles.authBrand,
+            ),
           ] else
             Text(
               _sectionTitle(_section),
@@ -377,7 +425,10 @@ class _DashboardPageState extends State<DashboardPage> {
           if (desktop)
             Padding(
               padding: const EdgeInsets.only(right: 14),
-              child: Text(_dateLabel(), style: AppTextStyles.authHelper),
+              child: Text(
+                '${_dateLabel()} · ${TimeOfDay.now().format(context)}',
+                style: AppTextStyles.authHelper,
+              ),
             ),
           TextButton.icon(
             key: const ValueKey('topbar-today'),
@@ -389,37 +440,8 @@ class _DashboardPageState extends State<DashboardPage> {
           PopupMenuButton<_OwnerMenuAction>(
             key: const ValueKey('owner-menu'),
             tooltip: 'Owner menu',
-            onSelected: (action) {
-              switch (action) {
-                case _OwnerMenuAction.addStaff:
-                  _selectSection(_DashboardSection.staff);
-                  break;
-                case _OwnerMenuAction.openFrontDesk:
-                  _openFrontDesk();
-                  break;
-                case _OwnerMenuAction.settings:
-                  _selectSection(_DashboardSection.settings);
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: _OwnerMenuAction.addStaff,
-                child: _menuRow(Icons.person_add_alt_1, 'Add staff'),
-              ),
-              PopupMenuItem(
-                key: const ValueKey('owner-open-front-desk'),
-                value: _OwnerMenuAction.openFrontDesk,
-                child: _menuRow(
-                  Icons.desktop_windows_outlined,
-                  'Open the front desk',
-                ),
-              ),
-              PopupMenuItem(
-                value: _OwnerMenuAction.settings,
-                child: _menuRow(Icons.settings_outlined, 'Settings'),
-              ),
-            ],
+            onSelected: _handleOwnerMenuAction,
+            itemBuilder: _ownerMenuItems,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
               decoration: BoxDecoration(
@@ -475,6 +497,38 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  void _handleOwnerMenuAction(_OwnerMenuAction action) {
+    switch (action) {
+      case _OwnerMenuAction.addStaff:
+        _selectSection(_DashboardSection.staff);
+        break;
+      case _OwnerMenuAction.openFrontDesk:
+        _openFrontDesk();
+        break;
+      case _OwnerMenuAction.settings:
+        _selectSection(_DashboardSection.settings);
+        break;
+    }
+  }
+
+  List<PopupMenuEntry<_OwnerMenuAction>> _ownerMenuItems(
+    BuildContext context,
+  ) => [
+    PopupMenuItem(
+      value: _OwnerMenuAction.addStaff,
+      child: _menuRow(Icons.person_add_alt_1, 'Add staff'),
+    ),
+    PopupMenuItem(
+      key: const ValueKey('owner-open-front-desk'),
+      value: _OwnerMenuAction.openFrontDesk,
+      child: _menuRow(Icons.desktop_windows_outlined, 'Open the front desk'),
+    ),
+    PopupMenuItem(
+      value: _OwnerMenuAction.settings,
+      child: _menuRow(Icons.settings_outlined, 'Settings'),
+    ),
+  ];
+
   Widget _menuRow(IconData icon, String label) {
     return Row(
       children: [
@@ -487,7 +541,14 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _selectedPage() {
     return switch (_section) {
-      _DashboardSection.dashboard => _dashboardOverview(),
+      _DashboardSection.dashboard => WorkspaceDashboardOverview(
+        setup: _setup,
+        repository: _workspaceRepository,
+        currency: _currency,
+        onOpenTasks: () => _selectSection(_DashboardSection.tasks),
+        onOpenProducts: () => _selectSection(_DashboardSection.products),
+        onOpenSpaces: () => _selectSection(_DashboardSection.spaces),
+      ),
       _DashboardSection.today => _todayPage(),
       _DashboardSection.bookings => WorkspaceBookingsPage(
         repository: _workspaceRepository,
@@ -539,791 +600,11 @@ class _DashboardPageState extends State<DashboardPage> {
     };
   }
 
-  Widget _dashboardOverview() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _pageHeader(
-          '$_greeting, $_ownerName',
-          '${_dateLabel()} · ${_setup.workspaceName} · '
-              '${_setup.city ?? _setup.country.name}',
-          titleKey: const ValueKey('dashboard-greeting'),
-        ),
-        if (_showWorkspaceTip) ...[const SizedBox(height: 14), _workspaceTip()],
-        const SizedBox(height: 14),
-        _dashboardFilters(),
-        const SizedBox(height: 12),
-        _metricGrid(),
-        const SizedBox(height: 14),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth < 720) {
-              return Column(
-                children: [
-                  _chartCard(),
-                  const SizedBox(height: 12),
-                  _standsOutCard(),
-                ],
-              );
-            }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(flex: 3, child: _chartCard()),
-                const SizedBox(width: 12),
-                Expanded(flex: 2, child: _standsOutCard()),
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: 14),
-        _spacePerformanceCard(),
-      ],
-    );
-  }
-
-  Widget _pageHeader(String title, String subtitle, {Key? titleKey}) {
-    return DashboardPageHeader(
-      title: title,
-      subtitle: subtitle,
-      titleKey: titleKey,
-      trailing: MediaQuery.sizeOf(context).width > 500
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                border: Border.all(color: AppColors.authBorder),
-                borderRadius: BorderRadius.circular(AppRadii.pill),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.circle, size: 7, color: AppColors.authGreen),
-                  SizedBox(width: 6),
-                  Text(
-                    'Right now · all quiet',
-                    style: AppTextStyles.authHelper,
-                  ),
-                ],
-              ),
-            )
-          : null,
-    );
-  }
-
-  Widget _workspaceTip() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F7F4),
-        border: Border.all(color: const Color(0xFFCBE3D9)),
-        borderRadius: BorderRadius.circular(AppRadii.control),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info_outline, color: AppColors.authGreen, size: 18),
-          const SizedBox(width: 9),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Your workspace at a glance',
-                  style: TextStyle(
-                    color: AppColors.authInk,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  'Money, visits and how full each space is, for the dates you pick. '
-                  'Not sure what a number means? Tap the ? next to it.',
-                  style: AppTextStyles.authHelper,
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () => setState(() => _showWorkspaceTip = false),
-            child: const Text('Got it', style: TextStyle(fontSize: 10)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _dashboardFilters() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        _filterMenu(
-          label: 'Showing',
-          value: _period,
-          options: const ['Today', 'This week', 'This month', 'This year'],
-          onSelected: (value) => setState(() => _period = value),
-        ),
-        _filterMenu(
-          label: 'Compared with',
-          value: _comparison,
-          options: const ['Nothing', 'Last week', 'Last month', 'Last year'],
-          onSelected: (value) => setState(() => _comparison = value),
-        ),
-      ],
-    );
-  }
-
-  Widget _filterMenu({
-    required String label,
-    required String value,
-    required List<String> options,
-    required ValueChanged<String> onSelected,
-  }) {
-    return SizedBox(
-      width: 240,
-      child: PopupMenuButton<String>(
-        onSelected: onSelected,
-        itemBuilder: (context) => [
-          for (final option in options)
-            PopupMenuItem(value: option, child: Text(option)),
-        ],
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            border: Border.all(color: AppColors.authBorder),
-            borderRadius: BorderRadius.circular(AppRadii.control),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.tune, size: 14, color: AppColors.authMuted),
-              const SizedBox(width: 7),
-              Text(label, style: AppTextStyles.authHelper),
-              const SizedBox(width: 5),
-              Expanded(
-                child: Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.authInk,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 3),
-              const Icon(Icons.expand_more, size: 14),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _metricGrid() {
-    final from = _dashboardFromDate;
-    final totals = _workspaceRepository.moneyTotals(from: from)[_currency];
-    final visits = _workspaceRepository.visits.where((visit) {
-      return from == null || !visit.checkedInAt.isBefore(from);
-    }).length;
-    final newCustomers = _workspaceRepository.customers.where((customer) {
-      final createdAt = customer.createdAt;
-      return createdAt != null && (from == null || !createdAt.isBefore(from));
-    }).length;
-    final capacity = workspaceSpaceOptions(_setup).length;
-    final occupancy = capacity == 0
-        ? 0
-        : ((_workspaceRepository.activeVisits().length / capacity) * 100)
-              .round()
-              .clamp(0, 100);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 850
-            ? 4
-            : constraints.maxWidth >= 500
-            ? 2
-            : 1;
-        return GridView.count(
-          crossAxisCount: columns,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 9,
-          crossAxisSpacing: 9,
-          childAspectRatio: columns == 1 ? 2.5 : 1.65,
-          children: [
-            _metricCard(
-              keyName: 'metric-money-in',
-              label: 'Money in',
-              detail: 'Everything customers paid',
-              value: '${(totals?.income ?? 0).toStringAsFixed(0)} $_currency',
-              icon: Icons.account_balance_wallet_outlined,
-            ),
-            _metricCard(
-              keyName: 'metric-visits',
-              label: 'Visits',
-              detail: 'Times customers came in',
-              value: '$visits',
-              icon: Icons.door_front_door_outlined,
-            ),
-            _metricCard(
-              keyName: 'metric-new-customers',
-              label: 'New customers',
-              detail: 'Came for the first time',
-              value: '$newCustomers',
-              icon: Icons.person_add_alt_outlined,
-            ),
-            _metricCard(
-              keyName: 'metric-how-full',
-              label: 'How full',
-              detail: 'How much space was used',
-              value: '$occupancy%',
-              icon: Icons.speed_outlined,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _metricCard({
-    required String keyName,
-    required String label,
-    required String detail,
-    required String value,
-    required IconData icon,
-  }) {
-    return Container(
-      key: ValueKey(keyName),
-      padding: const EdgeInsets.all(12),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 15, color: AppColors.authGreen),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.authInk,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              Icon(Icons.help_outline, size: 13, color: AppColors.authMuted),
-            ],
-          ),
-          Text(detail, style: AppTextStyles.authHelper),
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppColors.authInk,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _chartCard() {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _chartMetric == _ChartMetric.money
-                      ? 'Money in, day by day'
-                      : 'Visits, day by day',
-                  style: AppTextStyles.workspaceTitle,
-                ),
-              ),
-              SegmentedButton<_ChartMetric>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(
-                    value: _ChartMetric.money,
-                    label: Text('Money'),
-                  ),
-                  ButtonSegment(
-                    value: _ChartMetric.visits,
-                    label: Text('Visits'),
-                  ),
-                ],
-                selected: {_chartMetric},
-                onSelectionChanged: (selection) =>
-                    setState(() => _chartMetric = selection.first),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(_period, style: AppTextStyles.authHelper),
-          SizedBox(
-            key: const ValueKey('flat-dashboard-chart'),
-            height: 150,
-            child: CustomPaint(
-              painter: _FlatChartPainter(values: _dashboardChartValues()),
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              for (final label in _chartLabels())
-                Text(label, style: AppTextStyles.authHelper),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<double> _dashboardChartValues() {
-    final end = DateTime.now();
-    final start = _dashboardFromDate ?? DateTime(end.year, end.month);
-    final span = end.difference(start);
-    final interval = Duration(microseconds: (span.inMicroseconds / 7).round());
-    if (interval <= Duration.zero) return List.filled(7, 0);
-    return List.generate(7, (index) {
-      final bucketStart = start.add(interval * index);
-      final bucketEnd = index == 6
-          ? end.add(const Duration(microseconds: 1))
-          : bucketStart.add(interval);
-      if (_chartMetric == _ChartMetric.money) {
-        return _workspaceRepository.moneyEntries
-            .where(
-              (entry) =>
-                  entry.kind == MoneyEntryKind.income &&
-                  entry.currency == _currency &&
-                  !entry.occurredAt.isBefore(bucketStart) &&
-                  entry.occurredAt.isBefore(bucketEnd),
-            )
-            .fold(0.0, (total, entry) => total + entry.amount);
-      }
-      return _workspaceRepository.visits
-          .where(
-            (visit) =>
-                !visit.checkedInAt.isBefore(bucketStart) &&
-                visit.checkedInAt.isBefore(bucketEnd),
-          )
-          .length
-          .toDouble();
-    });
-  }
-
-  List<String> _chartLabels() => switch (_period) {
-    'Today' => const ['00', '04', '08', '12', '16', '20', '24'],
-    'This week' => const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    'This year' => const ['Jan', 'Mar', 'May', 'Jul', 'Sep', 'Nov', 'Dec'],
-    _ => const ['1', '5', '10', '15', '20', '25', '30'],
-  };
-
-  Widget _standsOutCard() {
-    final lowStock = _workspaceRepository.lowStockProducts().length;
-    final overdueTasks = _workspaceRepository.tasks.where((task) {
-      return !task.isCompleted &&
-          task.dueAt != null &&
-          task.dueAt!.isBefore(DateTime.now());
-    }).length;
-    final visitCount = _workspaceRepository.visits.length;
-    final insight = lowStock > 0
-        ? '$lowStock product${lowStock == 1 ? '' : 's'} running low on stock'
-        : overdueTasks > 0
-        ? '$overdueTasks task${overdueTasks == 1 ? '' : 's'} past due'
-        : visitCount > 0
-        ? '$visitCount customer visit${visitCount == 1 ? '' : 's'} recorded'
-        : 'Nothing to point out yet';
-    return Container(
-      constraints: const BoxConstraints(minHeight: 210),
-      padding: const EdgeInsets.all(15),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('What stands out', style: AppTextStyles.workspaceTitle),
-          const SizedBox(height: 3),
-          Text(_period, style: AppTextStyles.authHelper),
-          const Divider(height: 20),
-          const SizedBox(height: 32),
-          Center(
-            child: Column(
-              children: [
-                Icon(
-                  insight == 'Nothing to point out yet'
-                      ? Icons.auto_awesome_outlined
-                      : Icons.lightbulb_outline,
-                  color: AppColors.authMuted,
-                  size: 22,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  insight,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.authDescription,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
-  }
-
-  Widget _spacePerformanceCard() {
-    final spaces = _setup.selectedSpaces;
-    final kitchenItems = _setup.kitchenItems
-        .where(
-          (item) =>
-              item.name.trim().isNotEmpty ||
-              item.price.trim().isNotEmpty ||
-              item.quantity.trim().isNotEmpty ||
-              item.costsYou.trim().isNotEmpty,
-        )
-        .toList();
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 720;
-        final isEmpty = spaces.isEmpty && kitchenItems.isEmpty;
-        return Container(
-          padding: const EdgeInsets.all(15),
-          decoration: _cardDecoration(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'How each space is doing',
-                style: AppTextStyles.workspaceTitle,
-              ),
-              const SizedBox(height: 3),
-              const Text(
-                'From what you set up in Spaces & rooms',
-                style: AppTextStyles.authHelper,
-              ),
-              const SizedBox(height: 12),
-              if (isEmpty)
-                const Text(
-                  'No spaces set up yet.',
-                  style: AppTextStyles.authDescription,
-                )
-              else ...[
-                if (!compact) _performanceTableHeader(),
-                for (var index = 0; index < spaces.length; index++)
-                  _spacePerformanceRow(
-                    spaces[index],
-                    isLast: index == spaces.length - 1 && kitchenItems.isEmpty,
-                    compact: compact,
-                  ),
-                if (kitchenItems.isNotEmpty)
-                  _performanceRow(
-                    id: 'kitchen',
-                    title: 'Kitchen',
-                    details: '${kitchenItems.length} products',
-                    items: [
-                      for (var index = 0; index < kitchenItems.length; index++)
-                        kitchenItems[index].name.trim().isEmpty
-                            ? 'Product ${index + 1}'
-                            : kitchenItems[index].name.trim(),
-                    ],
-                    used: '0 sold',
-                    moneyIn: 0,
-                    isLast: true,
-                    compact: compact,
-                    icon: Icons.local_cafe_outlined,
-                  ),
-              ],
-              if (isEmpty)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: () => _selectSection(_DashboardSection.spaces),
-                    child: const Text('Set up spaces'),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _performanceTableHeader() {
-    const style = TextStyle(
-      color: AppColors.authMuted,
-      fontSize: 9,
-      fontWeight: FontWeight.w700,
-      letterSpacing: .3,
-    );
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Expanded(flex: 4, child: Text('SPACE', style: style)),
-          Expanded(flex: 2, child: Text('HOW FULL', style: style)),
-          Expanded(flex: 2, child: Text('USED', style: style)),
-          Expanded(flex: 2, child: Text('MONEY IN', style: style)),
-          Expanded(flex: 1, child: Text('CHANGE', style: style)),
-        ],
-      ),
-    );
-  }
-
-  Widget _spacePerformanceRow(
-    SetupSpaceType type, {
-    required bool isLast,
-    required bool compact,
-  }) {
-    final details = spaceSummary(type, _setup.spaces[type]!);
-    return _performanceRow(
-      id: type.name,
-      title: type.label,
-      details: details,
-      items: _spaceItemNames(type),
-      used: _spaceUsage(type),
-      moneyIn: _spaceIncome(type),
-      isLast: isLast,
-      compact: compact,
-      icon: type == SetupSpaceType.rooms
-          ? Icons.meeting_room_outlined
-          : Icons.chair_outlined,
-    );
-  }
-
-  List<String> _spaceItemNames(SetupSpaceType type) =>
-      workspaceSpaceOptions(_setup)
-          .where((option) => option.type == type)
-          .map((option) => option.name)
-          .toList();
-
-  String _spaceUsage(SetupSpaceType type) {
-    final visits = _workspaceRepository.visits.where(
-      (visit) =>
-          visit.spaceType == type &&
-          (_dashboardFromDate == null ||
-              !visit.checkedInAt.isBefore(_dashboardFromDate!)),
-    );
-    return switch (type) {
-      SetupSpaceType.sharedArea => '${visits.length} visits',
-      SetupSpaceType.rooms => '${visits.length} bookings',
-      SetupSpaceType.computers => '${visits.length} sessions',
-      SetupSpaceType.privateOffices => '${visits.length} rentals',
-      SetupSpaceType.virtualOffice => '${visits.length} visits',
-      SetupSpaceType.other => '${visits.length} bookings',
-    };
-  }
-
-  double _spaceIncome(SetupSpaceType type) => _workspaceRepository.visits
-      .where(
-        (visit) =>
-            visit.spaceType == type &&
-            visit.isPaid &&
-            (_dashboardFromDate == null ||
-                !visit.checkedInAt.isBefore(_dashboardFromDate!)),
-      )
-      .fold(0, (total, visit) => total + visit.amount);
-
-  Widget _performanceRow({
-    required String id,
-    required String title,
-    required String details,
-    required List<String> items,
-    required String used,
-    required double moneyIn,
-    required bool isLast,
-    required bool compact,
-    required IconData icon,
-  }) {
-    final expanded = _expandedSpaceDetails.contains(id);
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 9),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : const Border(bottom: BorderSide(color: AppColors.authBorder)),
-      ),
-      child: Column(
-        children: [
-          if (compact)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _performanceName(id, title, details, items, icon, expanded),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(child: _fullCell()),
-                    Expanded(
-                      child: Text(used, style: AppTextStyles.authHelper),
-                    ),
-                    Expanded(
-                      child: Text(
-                        '${moneyIn.toStringAsFixed(0)} $_currency',
-                        textAlign: TextAlign.right,
-                        style: AppTextStyles.authHelper,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            )
-          else
-            Row(
-              children: [
-                Expanded(
-                  flex: 4,
-                  child: _performanceName(
-                    id,
-                    title,
-                    details,
-                    items,
-                    icon,
-                    expanded,
-                  ),
-                ),
-                Expanded(flex: 2, child: _fullCell()),
-                Expanded(
-                  flex: 2,
-                  child: Text(used, style: AppTextStyles.authHelper),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    '${moneyIn.toStringAsFixed(0)} $_currency',
-                    style: AppTextStyles.authHelper,
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: Text(
-                    _comparison == 'Nothing' ? '—' : '0%',
-                    style: AppTextStyles.authHelper,
-                  ),
-                ),
-              ],
-            ),
-          if (expanded)
-            Padding(
-              padding: EdgeInsets.only(
-                left: compact ? 27 : 26,
-                top: 7,
-                right: 3,
-              ),
-              child: Column(
-                children: [
-                  for (final item in items)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.subdirectory_arrow_right,
-                            size: 13,
-                            color: AppColors.authMuted,
-                          ),
-                          const SizedBox(width: 7),
-                          Expanded(
-                            child: Text(item, style: AppTextStyles.authHelper),
-                          ),
-                          const Text(
-                            '0% full · 0 activity',
-                            style: AppTextStyles.authHelper,
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _performanceName(
-    String id,
-    String title,
-    String details,
-    List<String> items,
-    IconData icon,
-    bool expanded,
-  ) {
-    return Row(
-      children: [
-        Icon(icon, size: 17, color: AppColors.authMuted),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: AppColors.authInk,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Text(details, style: AppTextStyles.authHelper),
-            ],
-          ),
-        ),
-        if (items.isNotEmpty)
-          TextButton(
-            key: ValueKey('show-space-details-$id'),
-            onPressed: () => setState(() {
-              if (expanded) {
-                _expandedSpaceDetails.remove(id);
-              } else {
-                _expandedSpaceDetails.add(id);
-              }
-            }),
-            style: TextButton.styleFrom(
-              minimumSize: const Size(0, 30),
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              visualDensity: VisualDensity.compact,
-            ),
-            child: Text(expanded ? 'Hide' : 'Show all ${items.length}'),
-          ),
-      ],
-    );
-  }
-
-  Widget _fullCell() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('0% full', style: AppTextStyles.authHelper),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: const LinearProgressIndicator(
-            value: 0,
-            minHeight: 4,
-            backgroundColor: AppColors.authBorder,
-            color: AppColors.authGreen,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _todayPage() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _pageHeader('Today', _dateLabel()),
+        DashboardPageHeader(title: 'Today', subtitle: _dateLabel()),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(16),
@@ -1873,72 +1154,6 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   BoxDecoration _cardDecoration() => dashboardCardDecoration();
-}
-
-class _FlatChartPainter extends CustomPainter {
-  const _FlatChartPainter({required this.values});
-
-  final List<double> values;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final grid = Paint()
-      ..color = AppColors.authBorder
-      ..strokeWidth = 1;
-    final line = Paint()
-      ..color = AppColors.authGreen
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-    final chartTop = 12.0;
-    final chartBottom = size.height - 12;
-
-    for (var index = 0; index < 4; index++) {
-      final y = chartTop + (chartBottom - chartTop) * index / 3;
-      canvas.drawLine(Offset(26, y), Offset(size.width, y), grid);
-    }
-    final maxValue = values.fold<double>(0, (max, value) {
-      return value > max ? value : max;
-    });
-    final usableHeight = chartBottom - chartTop - 8;
-    final path = Path();
-    for (var index = 0; index < values.length; index++) {
-      final x = values.length <= 1
-          ? 26.0
-          : 26 + (size.width - 26) * index / (values.length - 1);
-      final y = maxValue <= 0
-          ? chartBottom - 2
-          : chartBottom - 2 - (values[index] / maxValue) * usableHeight;
-      if (index == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-    canvas.drawPath(path, line);
-
-    if (maxValue <= 0) {
-      final zeroLabel = TextPainter(
-        text: const TextSpan(
-          text: '0',
-          style: TextStyle(color: AppColors.authMuted, fontSize: 9),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      zeroLabel.paint(
-        canvas,
-        Offset(3, chartBottom - 2 - zeroLabel.height / 2),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _FlatChartPainter oldDelegate) {
-    if (values.length != oldDelegate.values.length) return true;
-    for (var index = 0; index < values.length; index++) {
-      if (values[index] != oldDelegate.values[index]) return true;
-    }
-    return false;
-  }
 }
 
 class _FrontDeskChoiceDialog extends StatefulWidget {
