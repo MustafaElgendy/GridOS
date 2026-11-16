@@ -7,9 +7,10 @@ import 'package:grid_os/Sign_Up_pages/Startup_Pages/startup_setup_widgets.dart';
 import 'package:grid_os/theme/app_theme.dart';
 
 class PricesPage extends StatefulWidget {
-  const PricesPage({super.key, required this.setup});
+  const PricesPage({super.key, required this.setup, this.embedded = false});
 
   final StartupSetup setup;
+  final bool embedded;
 
   @override
   State<PricesPage> createState() => _PricesPageState();
@@ -145,6 +146,8 @@ class _PricesPageState extends State<PricesPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) return _priceCards();
+
     return SetupPageFrame(
       step: 3,
       workspaceName: widget.setup.workspaceName,
@@ -163,12 +166,25 @@ class _PricesPageState extends State<PricesPage> {
               returnToSetupStep(context, currentStep: 3, targetStep: step),
         ),
       ),
-      child: Column(
-        children: [
-          for (var index = 0; index < _spaces.length; index++)
-            _priceCard(index, _spaces[index]),
-        ],
-      ),
+      child: _priceCards(),
+    );
+  }
+
+  Widget _priceCards() {
+    if (_spaces.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Text(
+          'Choose a space in the Spaces tab to set its prices.',
+          style: AppTextStyles.authDescription,
+        ),
+      );
+    }
+    return Column(
+      children: [
+        for (var index = 0; index < _spaces.length; index++)
+          _priceCard(index, _spaces[index]),
+      ],
     );
   }
 

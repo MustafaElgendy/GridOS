@@ -7,9 +7,16 @@ import 'package:grid_os/Sign_Up_pages/Startup_Pages/startup_setup_widgets.dart';
 import 'package:grid_os/theme/app_theme.dart';
 
 class SpacesPage extends StatefulWidget {
-  const SpacesPage({super.key, required this.setup});
+  const SpacesPage({
+    super.key,
+    required this.setup,
+    this.embedded = false,
+    this.onChanged,
+  });
 
   final StartupSetup setup;
+  final bool embedded;
+  final VoidCallback? onChanged;
 
   @override
   State<SpacesPage> createState() => _SpacesPageState();
@@ -30,10 +37,12 @@ class _SpacesPageState extends State<SpacesPage> {
 
   void _refreshSummary() {
     _spacesRevision.value++;
+    widget.onChanged?.call();
   }
 
   void _refreshStructure() {
     setState(() {});
+    widget.onChanged?.call();
   }
 
   int? _positive(String value) {
@@ -145,6 +154,8 @@ class _SpacesPageState extends State<SpacesPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) return _spaceCards();
+
     return Scaffold(
       backgroundColor: AppColors.authBackground,
       body: SafeArea(
@@ -319,6 +330,7 @@ class _SpacesPageState extends State<SpacesPage> {
                       _issues.remove(type);
                       _needsSelection = false;
                     });
+                    widget.onChanged?.call();
                   },
                 ),
                 Expanded(

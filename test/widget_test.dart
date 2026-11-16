@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:grid_os/Main Pages/dashboard.dart';
 import 'package:grid_os/Sign_Up_pages/Startup_Pages/preview_page.dart';
 import 'package:grid_os/Sign_Up_pages/Startup_Pages/startup_setup_models.dart';
 import 'package:grid_os/Sign_Up_pages/Startup_Pages/spaces_page.dart';
@@ -11,6 +12,7 @@ import 'package:grid_os/Sign_Up_pages/first_sign_up.dart';
 import 'package:grid_os/Sign_Up_pages/login_page.dart';
 import 'package:grid_os/Sign_Up_pages/sign_up_models.dart';
 import 'package:grid_os/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets('desktop landing page renders', (tester) async {
@@ -578,11 +580,553 @@ void main() {
     await tester.ensureVisible(find.text('Go to dashboard'));
     await tester.tap(find.text('Go to dashboard'));
     await tester.pumpAndSettle();
-    expect(find.text('Will staff use this computer?'), findsOneWidget);
-    await tester.tap(find.text('No'));
+    expect(find.byKey(const ValueKey('dashboard-greeting')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'empty dashboard uses zero metrics and opens Today without staff',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+
+      final setup = StartupSetup(ownerName: 'Karim', workspaceName: 'GridOS');
+      await tester.pumpWidget(MaterialApp(home: DashboardPage(setup: setup)));
+
+      expect(find.text('0 EGP'), findsWidgets);
+      expect(find.text('0%'), findsOneWidget);
+      expect(find.text('Nothing to point out yet'), findsOneWidget);
+      expect(find.text('Shared area'), findsOneWidget);
+      expect(find.text('0% full'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('owner-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('owner-open-front-desk')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Who’s working?'), findsOneWidget);
+      expect(find.text('Karim · Owner'), findsOneWidget);
+      expect(find.text('Start shift'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'dashboard Spaces and Prices reuse setup editors and update overview',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+
+      final setup = StartupSetup(ownerName: 'Alex', workspaceName: 'GridOS');
+      setup.kitchenItems.first
+        ..name = 'Pepsi'
+        ..price = '20';
+      await tester.pumpWidget(MaterialApp(home: DashboardPage(setup: setup)));
+
+      await tester.tap(find.byKey(const ValueKey('nav-spaces')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('spaces-tab-spaces')), findsOneWidget);
+      expect(find.byKey(const ValueKey('add-shared-area')), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('add-shared-area')));
+      await tester.pumpAndSettle();
+      expect(
+        setup.spaces[SetupSpaceType.sharedArea]!.sharedAreas,
+        hasLength(2),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('spaces-tab-prices')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('price-card-sharedArea')),
+        findsOneWidget,
+      );
+      expect(find.text('How do walk-ins pay?'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('nav-dashboard')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('How each space is doing'));
+      expect(find.text('2 areas · 80 chairs'), findsOneWidget);
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('show-space-details-sharedArea')),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('show-space-details-sharedArea')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Area 2'), findsOneWidget);
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('show-space-details-kitchen')),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('show-space-details-kitchen')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Pepsi'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('nav-spaces')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('spaces-tab-spaces')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(Checkbox).at(1));
+      await tester.pumpAndSettle();
+      expect(setup.selectedSpaces, contains(SetupSpaceType.rooms));
+
+      await tester.tap(find.byKey(const ValueKey('nav-dashboard')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('How each space is doing'));
+      expect(find.text('2 rooms · 10 seats'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('front desk choice is saved per device when staff are added', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+
+    final setup = StartupSetup(ownerName: 'Karim', workspaceName: 'GridOS');
+    setup.staff.add(StaffSetup(name: 'Mona', pin: '2468'));
+    setup.staffPins.add('2468');
+    await tester.pumpWidget(MaterialApp(home: DashboardPage(setup: setup)));
+
+    await tester.tap(find.byKey(const ValueKey('owner-menu')));
     await tester.pumpAndSettle();
-    expect(setup.staffUsesThisComputer, isFalse);
-    expect(find.text('GridOS dashboard'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('owner-open-front-desk')));
+    await tester.pumpAndSettle();
+    expect(find.text('Will staff use this computer?'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('frontdesk-choice-no')));
+    await tester.tap(find.byKey(const ValueKey('confirm-frontdesk-choice')));
+    await tester.pumpAndSettle();
+
+    final preferences = await SharedPreferences.getInstance();
+    expect(preferences.getBool(frontDeskPreferenceKey(setup)), isFalse);
+    expect(
+      find.text(
+        'On the front desk computer, log in and tap Open the front desk.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Who’s working?'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('front desk setup rejects weak owner PIN and starts shifts', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+
+    final setup = StartupSetup(ownerName: 'Karim', workspaceName: 'GridOS');
+    setup.staff.add(StaffSetup(name: 'Mona', pin: '2468'));
+    setup.staffPins.add('2468');
+    await tester.pumpWidget(MaterialApp(home: DashboardPage(setup: setup)));
+
+    await tester.tap(find.byKey(const ValueKey('owner-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('owner-open-front-desk')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('confirm-frontdesk-choice')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('owner-pin-entry')),
+      '123456',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('owner-pin-confirm')),
+      '123456',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-owner-pin')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Choose a less predictable PIN, not a simple sequence.'),
+      findsOneWidget,
+    );
+
+    await tester.enterText(
+      find.byKey(const ValueKey('owner-pin-entry')),
+      '284971',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('owner-pin-confirm')),
+      '284971',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-owner-pin')));
+    await tester.pumpAndSettle();
+
+    expect(setup.ownerPin, '284971');
+    expect(find.text('Who’s working?'), findsOneWidget);
+    expect(find.text('Karim · Owner'), findsOneWidget);
+    expect(find.text('Mona'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Karim · Owner')).dy,
+      lessThan(tester.getTopLeft(find.text('Mona')).dy),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('start-shift-owner')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('shift-pin-entry')),
+      '284971',
+    );
+    await tester.tap(find.byKey(const ValueKey('submit-shift-pin')));
+    await tester.pumpAndSettle();
+    expect(find.text('On shift'), findsWidgets);
+
+    await tester.tap(find.byKey(const ValueKey('owner-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('owner-open-front-desk')));
+    await tester.pumpAndSettle();
+    expect(find.text('Will staff use this computer?'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('dashboard sections provide their empty-state actions', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+
+    final setup = StartupSetup(ownerName: 'Karim', workspaceName: 'GridOS');
+    await tester.pumpWidget(MaterialApp(home: DashboardPage(setup: setup)));
+
+    final emptySections = [
+      ('customers', 'No customers yet', 'Add customer'),
+      ('products', 'No products yet', 'Add product'),
+      ('tasks', 'No tasks yet', 'Create task'),
+      (
+        'insights',
+        'Insights will grow with your workspace',
+        'View your spaces',
+      ),
+    ];
+    for (final (section, heading, action) in emptySections) {
+      await tester.tap(find.byKey(ValueKey('nav-$section')));
+      await tester.pumpAndSettle();
+      expect(find.text(heading), findsOneWidget);
+      expect(find.text(action), findsOneWidget);
+    }
+
+    await tester.tap(find.byKey(const ValueKey('nav-bookings')));
+    await tester.pumpAndSettle();
+    expect(find.text('No bookings yet'), findsOneWidget);
+    expect(
+      find.text('When staff book on Today, it shows up here.'),
+      findsOneWidget,
+    );
+    expect(find.text('Open the front desk'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('nav-staff')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Runs the front desk until you add staff'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Set owner PIN'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('owner-pin-entry')),
+      '284971',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('owner-pin-confirm')),
+      '284971',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-owner-pin')));
+    await tester.pumpAndSettle();
+    expect(setup.ownerPin, '284971');
+    expect(find.text('Change owner PIN'), findsOneWidget);
+
+    await tester.tap(find.text('Add staff'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('new-staff-name')),
+      'Mona',
+    );
+    await tester.enterText(find.byKey(const ValueKey('new-staff-pin')), '2468');
+    await tester.tap(find.byKey(const ValueKey('save-new-staff')));
+    await tester.pumpAndSettle();
+    expect(setup.staff.map((member) => member.name), contains('Mona'));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('front desk visits update customers and money totals', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+
+    final setup = StartupSetup(ownerName: 'Karim', workspaceName: 'GridOS');
+    await tester.pumpWidget(MaterialApp(home: DashboardPage(setup: setup)));
+    await tester.tap(find.byKey(const ValueKey('nav-today')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'Today page');
+    await tester.tap(find.text('Check in').first);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'Check-in form');
+    await tester.enterText(
+      find.byKey(const ValueKey('checkin-customer-name')),
+      'Rania',
+    );
+    await tester.enterText(find.byKey(const ValueKey('checkin-charge')), '50');
+    await tester.tap(find.byKey(const ValueKey('submit-checkin')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'After check-in');
+
+    expect(find.text('Rania'), findsOneWidget);
+    await tester.tap(find.text('Check out'));
+    await tester.pumpAndSettle();
+    expect(find.text('No one is checked in right now.'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('nav-customers')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'Customers page');
+    expect(find.text('Rania'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('nav-money')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'Money page');
+    expect(find.text('50 EGP'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('tasks, bookings, products and money can be created', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+
+    final setup = StartupSetup(ownerName: 'Karim', workspaceName: 'GridOS');
+    await tester.pumpWidget(MaterialApp(home: DashboardPage(setup: setup)));
+
+    await tester.tap(find.byKey(const ValueKey('nav-tasks')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create task'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('workspace-task-title')),
+      'Wipe desks',
+    );
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Wipe desks'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('nav-products')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add product'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('workspace-product-name')),
+      'Coffee',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('workspace-product-price')),
+      '30',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('workspace-product-cost')),
+      '12',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('workspace-product-stock')),
+      '6',
+    );
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Coffee'), findsOneWidget);
+    await tester.tap(find.byTooltip('Add stock'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, '3');
+    await tester.enterText(find.byType(TextFormField).last, '10');
+    await tester.tap(find.text('Add stock'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('nav-bookings')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New booking'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('workspace-booking-customer')),
+      'Rania',
+    );
+    await tester.tap(find.text('Save booking'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rania'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('nav-money')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add money in').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('workspace-money-description')),
+      'Desk rental',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('workspace-money-amount')),
+      '50',
+    );
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Desk rental'), findsOneWidget);
+    expect(find.text('50 EGP'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('workspace data pages fit on a compact screen', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+
+    final setup = StartupSetup(ownerName: 'Karim', workspaceName: 'GridOS');
+    await tester.pumpWidget(MaterialApp(home: DashboardPage(setup: setup)));
+    for (final section in [
+      'today',
+      'bookings',
+      'customers',
+      'tasks',
+      'money',
+      'insights',
+      'spaces',
+      'products',
+      'staff',
+      'settings',
+    ]) {
+      await tester.tap(find.byKey(const ValueKey('dashboard-drawer-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ValueKey('nav-$section')));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: '$section page');
+    }
+
+    for (final label in [
+      'Customer questions',
+      'Cash & shifts',
+      'WhatsApp & invoices',
+    ]) {
+      await tester.ensureVisible(find.text(label));
+      await tester.tap(find.text(label));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: '$label settings');
+    }
+  });
+
+  testWidgets('cash reconciliation records a closing shift count', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+
+    final setup = StartupSetup(ownerName: 'Karim', workspaceName: 'GridOS');
+    await tester.pumpWidget(MaterialApp(home: DashboardPage(setup: setup)));
+    await tester.tap(find.byKey(const ValueKey('owner-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('owner-open-front-desk')));
+    await tester.pumpAndSettle();
+    expect(find.text('On shift'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('nav-settings')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cash & shifts'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Use the cash drawer'));
+    await tester.tap(find.text('Reconcile cash at shift end'));
+    await tester.tap(find.text('Save cash settings'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('nav-today')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('End shift'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('cash-count-entry')),
+      '50',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-cash-count')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('nav-money')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Counted 50 EGP'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('customer questions are grouped by check-in and check-out', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+
+    final setup = StartupSetup(ownerName: 'Karim', workspaceName: 'GridOS');
+    await tester.pumpWidget(MaterialApp(home: DashboardPage(setup: setup)));
+    await tester.tap(find.byKey(const ValueKey('nav-settings')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Customer questions'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Add question'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('customer-question-prompt')),
+      'What brings you in?',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('customer-question-options')),
+      'Work, Study',
+    );
+    await tester.tap(find.text('Save question'));
+    await tester.pumpAndSettle();
+    expect(find.text('What brings you in?'), findsOneWidget);
+
+    await tester.tap(find.text('At check-out'));
+    await tester.pumpAndSettle();
+    expect(find.text('No questions for check-out yet'), findsOneWidget);
+    await tester.tap(find.byTooltip('Add question'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('customer-question-prompt')),
+      'How was your visit?',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('customer-question-options')),
+      'Great, Okay',
+    );
+    await tester.tap(find.text('Save question'));
+    await tester.pumpAndSettle();
+    expect(find.text('How was your visit?'), findsOneWidget);
+
+    await tester.tap(find.text('At check-in'));
+    await tester.pumpAndSettle();
+    expect(find.text('What brings you in?'), findsOneWidget);
+    expect(find.text('How was your visit?'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -594,22 +1138,27 @@ void main() {
 
     final setup = StartupSetup(ownerName: 'Karim', workspaceName: 'GridOS');
     setup.hoursMode = SetupHoursMode.perDay;
-    final pages = <(Widget, String)>[
+    final pages = <(Widget, String?)>[
       (WorkspacePage(setup: setup), 'Your workspace'),
       (SpacesPage(setup: setup), 'Your spaces'),
       (PricesPage(setup: setup), 'Set your prices'),
       (KitchenPage(setup: setup), 'Your kitchen'),
       (StaffPage(setup: setup), 'Your staff'),
       (PreviewPage(setup: setup), 'Review your setup'),
+      (DashboardPage(setup: setup), null),
     ];
 
     for (final (page, title) in pages) {
       await tester.pumpWidget(MaterialApp(home: page));
       await tester.pumpAndSettle();
+      final titleFinder = title == null
+          ? find.byKey(const ValueKey('dashboard-greeting'))
+          : find.text(title);
+      if (title == null) expect(titleFinder, findsOneWidget);
       final pageScroll = title == 'Your workspace'
           ? find.byKey(const PageStorageKey<String>('workspace-setup'))
           : find.ancestor(
-              of: find.text(title),
+              of: titleFinder,
               matching: find.byType(SingleChildScrollView),
             );
       expect(pageScroll, findsOneWidget);

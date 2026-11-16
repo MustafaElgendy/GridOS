@@ -238,7 +238,7 @@ class StartupSetup {
   List<KitchenItemSetup> kitchenItems = [KitchenItemSetup()];
   final List<StaffSetup> staff = [];
   final Set<String> staffPins = {};
-  bool? staffUsesThisComputer;
+  String? ownerPin;
 
   List<SetupSpaceType> get selectedSpaces =>
       SetupSpaceType.values.where((type) => spaces[type]!.selected).toList();
