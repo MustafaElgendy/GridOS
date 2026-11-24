@@ -21,10 +21,9 @@ class WorkspaceRepository {
   List<Product> get products => List.unmodifiable(_products.values);
   List<MoneyEntry> get moneyEntries => List.unmodifiable(_moneyEntries.values);
   List<Bill> get bills => List.unmodifiable(_bills.values);
-  List<CustomerQuestion> get questions =>
-      List.unmodifiable(_questions.values.toList()..sort(
-        (a, b) => a.order.compareTo(b.order),
-      ));
+  List<CustomerQuestion> get questions => List.unmodifiable(
+    _questions.values.toList()..sort((a, b) => a.order.compareTo(b.order)),
+  );
   List<CustomerQuestionResponse> get questionResponses =>
       List.unmodifiable(_questionResponses.values);
   List<WorkspaceShift> get shifts => List.unmodifiable(_shifts.values);
@@ -85,11 +84,10 @@ class WorkspaceRepository {
       _update(_questions, value.id, value);
   bool deleteQuestion(String id) {
     final removed = _questions.remove(id) != null;
-    _questionResponses.removeWhere(
-      (_, response) => response.questionId == id,
-    );
+    _questionResponses.removeWhere((_, response) => response.questionId == id);
     return removed;
   }
+
   CustomerQuestionResponse createQuestionResponse(
     CustomerQuestionResponse value,
   ) => _create(_questionResponses, value.id, value);
@@ -109,9 +107,7 @@ class WorkspaceRepository {
   }
 
   List<Visit> visitsForCustomer(String customerId) =>
-      _visits.values
-          .where((visit) => visit.customerId == customerId)
-          .toList()
+      _visits.values.where((visit) => visit.customerId == customerId).toList()
         ..sort((a, b) => b.checkedInAt.compareTo(a.checkedInAt));
 
   List<MoneyEntry> moneyEntriesFor(MoneyEntryKind kind) =>
@@ -158,9 +154,7 @@ class WorkspaceRepository {
         )
         .toList()
       ..sort(
-        (a, b) => _nextOccurrence(a, now)!.compareTo(
-          _nextOccurrence(b, now)!,
-        ),
+        (a, b) => _nextOccurrence(a, now)!.compareTo(_nextOccurrence(b, now)!),
       );
   }
 
@@ -239,7 +233,11 @@ class WorkspaceRepository {
         ) &&
         (booking.until == null ||
             !startOfDay.isAfter(
-              DateTime(booking.until!.year, booking.until!.month, booking.until!.day),
+              DateTime(
+                booking.until!.year,
+                booking.until!.month,
+                booking.until!.day,
+              ),
             ))) {
       return true;
     }
@@ -257,7 +255,11 @@ class WorkspaceRepository {
     );
     final startDay = after.isBefore(firstDay) ? firstDay : after;
     for (var offset = 0; offset <= 370; offset++) {
-      final day = DateTime(startDay.year, startDay.month, startDay.day + offset);
+      final day = DateTime(
+        startDay.year,
+        startDay.month,
+        startDay.day + offset,
+      );
       if (booking.until != null && day.isAfter(booking.until!)) return null;
       if (booking.weekdays.contains(day.weekday)) {
         final occurrence = DateTime(

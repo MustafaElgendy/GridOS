@@ -963,6 +963,7 @@ void main() {
       lessThan(tester.getTopLeft(find.text('Mona')).dy),
     );
 
+    await tester.ensureVisible(find.byKey(const ValueKey('start-shift-owner')));
     await tester.tap(find.byKey(const ValueKey('start-shift-owner')));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -972,6 +973,16 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('submit-shift-pin')));
     await tester.pumpAndSettle();
     expect(find.text('On shift'), findsWidgets);
+
+    await tester.ensureVisible(find.byKey(const ValueKey('switch-to-owner')));
+    await tester.tap(find.byKey(const ValueKey('switch-to-owner')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('owner-pin-entry')),
+      '284971',
+    );
+    await tester.tap(find.byKey(const ValueKey('unlock-owner-view')));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('owner-menu')));
     await tester.pumpAndSettle();
@@ -1084,6 +1095,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('No one is checked in right now.'), findsOneWidget);
 
+    await tester.tap(find.byKey(const ValueKey('switch-to-owner')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('nav-customers')));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: 'Customers page');
@@ -1333,6 +1346,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('On shift'), findsOneWidget);
 
+    await tester.tap(find.byKey(const ValueKey('switch-to-owner')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('nav-settings')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cash & shifts'));
@@ -1351,6 +1366,8 @@ void main() {
       '50',
     );
     await tester.tap(find.byKey(const ValueKey('save-cash-count')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('switch-to-owner')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('nav-money')));
     await tester.pumpAndSettle();
@@ -1533,6 +1550,36 @@ void main() {
       await tester.pump(const Duration(minutes: 5));
       expect(tester.widget<FilledButton>(loginButton).onPressed, isNotNull);
       expect(find.text('Log in'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'owner can switch between Owner view and Front desk Staff view',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+
+      final setup = StartupSetup(ownerName: 'Karim', workspaceName: 'GridOS');
+      await tester.pumpWidget(MaterialApp(home: DashboardPage(setup: setup)));
+
+      expect(find.byKey(const ValueKey('dashboard-overview')), findsOneWidget);
+      expect(find.text('Front desk'), findsWidgets);
+
+      await tester.tap(find.byKey(const ValueKey('nav-today')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('front-desk-staff-view')), findsOneWidget);
+      expect(find.text('Staff view'), findsWidgets);
+      expect(find.byKey(const ValueKey('switch-to-owner')), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('switch-to-owner')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('dashboard-overview')), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
